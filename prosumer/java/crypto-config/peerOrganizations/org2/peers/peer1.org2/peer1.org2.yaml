@@ -1,0 +1,160 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: org2
+  name:	peer1-org2
+spec:
+  selector:
+    matchLabels:
+       app: hyperledger
+       role: peer
+       peer-id: peer1
+       org: org2
+  replicas: 1
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+       app: hyperledger
+       role: peer
+       peer-id: peer1
+       org: org2
+    spec:
+      containers:
+        # CouchDB to store chaincodes
+      - name: couchdb
+        image: hyperledger/fabric-couchdb:0.4.14
+        ports:
+         - containerPort: 5984
+
+        # Docker in Docker Daemon
+      - name: dind-daemon
+        image: docker:18.09-dind
+#        resources:
+#          requests:
+#            cpu: 20m
+#            memory: 512Mi
+        ports:
+          - containerPort: 2375
+        securityContext:
+          privileged: true
+#        args: ["--debug"]
+#        readinessProbe:
+#          exec:
+#            command:
+#              - /bin/sh
+#              - -c
+#              - "ping -c 3 -t 10 google.com"
+#          initialDelaySeconds: 10 # how long to wait before checking
+#          periodSeconds: 3 # how long to wait between checks
+#          successThreshold: 1 # how many successes to hit before accepting
+#          failureThreshold: 3 # how many failures to accept before failing
+#          timeoutSeconds: 11 # how long to wait for a response
+        volumeMounts:
+          - name: dind-graph-storage
+            mountPath: /var/lib/docker
+
+        # Fabric Peer
+      - name: peer1-org2 
+        image: hyperledger/fabric-peer:1.4.0
+        env:
+        - name: CORE_LEDGER_STATE_STATEDATABASE
+          value: "CouchDB"
+        - name: CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS
+          value: "localhost:5984"
+        - name: CORE_VM_ENDPOINT
+          value: "tcp://localhost:2375"
+        - name: CORE_LOGGING_LEVEL
+          value: debug
+        - name: CORE_PEER_TLS_ENABLED
+          value: "false"
+        - name: CORE_VM_DOCKER_ATTACHSTDOUT
+          value: "true"
+        - name: CORE_CHAINCODE_LOGGING_LEVEL
+          value: "debug"
+        - name: CORE_CHAINCODE_LOGGING_SHIM 
+          value: "debug"
+        - name: CORE_PEER_GOSSIP_USELEADERELECTION
+          value: "true"
+        - name: CORE_PEER_GOSSIP_ORGLEADER
+          value: "false"
+        - name: CORE_PEER_PROFILE_ENABLED
+          value: "true"
+        - name: CORE_PEER_TLS_CERT_FILE
+          value: "/etc/hyperledger/fabric/tls/server.crt" 
+        - name: CORE_PEER_TLS_KEY_FILE
+          value: "/etc/hyperledger/fabric/tls/server.key"
+        - name: CORE_PEER_TLS_ROOTCERT_FILE
+          value: "/etc/hyperledger/fabric/tls/ca.crt"
+        - name: CORE_PEER_ID
+          value: peer1.org2
+        - name: CORE_PEER_ADDRESS
+          value: peer1.org2:7051
+        - name: CORE_PEER_GOSSIP_EXTERNALENDPOINT
+          value: peer1.org2:7051
+        - name: CORE_PEER_GOSSIP_BOOTSTRAP
+          value: peer1.org2:7051
+        - name: CORE_PEER_LOCALMSPID
+          value: Org2MSP
+# Added as mentioned here: https://github.com/MCLDG/fabric-on-kubernetes#peers-cannot-start-chaincode-server
+# Error: panic: Failed to create chaincode server: listen tcp ip:7052: bind: cannot assign requested address
+        - name: CORE_PEER_CHAINCODELISTENADDRESS
+          value: localhost:7052
+        - name: GOPATH
+          value: /opt/gopath
+        workingDir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+        ports:
+         - containerPort: 7051
+         - containerPort: 7052
+         - containerPort: 7053
+        command: ["peer"]
+        args: ["node","start"]
+        volumeMounts:
+         - mountPath: /etc/hyperledger/fabric/msp 
+           name: org-crypto-pv
+           subPath: peers/peer1.org2/msp
+         - mountPath: /etc/hyperledger/fabric/tls
+           name: org-crypto-pv
+           subPath: peers/peer1.org2/tls
+
+      volumes:
+       - name: org-crypto-pv
+         persistentVolumeClaim:
+             claimName: org2-pv
+       - name: dind-graph-storage
+         emptyDir: {}
+       
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+   namespace: org2
+   name: peer1
+spec:
+ selector:
+   app: hyperledger
+   role: peer
+   peer-id: peer1
+   org: org2
+ type: NodePort
+ ports:
+   - name: externale-listen-endpoint
+     protocol: TCP
+     port: 7051
+     targetPort: 7051
+     nodePort: 30104
+
+   - name: chaincode-listen
+     protocol: TCP
+     port: 7052
+     targetPort: 7052
+     nodePort: 30105
+
+   - name: event-hub
+     protocol: TCP
+     port: 7053
+     targetPort: 7053
+     nodePort: 30106
+---

@@ -1,0 +1,17 @@
+/home/ubuntu/java/src/main/java/org/example/client/CAClient.java
+/home/ubuntu/java/src/main/java/org/example/chaincode/invocation/Biding_buyer_user2.java
+/home/ubuntu/java/src/main/java/org/example/user/UserContext.java
+/home/ubuntu/java/src/main/java/org/example/client/FabricClient.java
+/home/ubuntu/java/src/main/java/org/example/network/CreateChannel.java
+/home/ubuntu/java/src/main/java/org/example/client/ChannelClient.java
+/home/ubuntu/java/src/main/java/org/example/util/Util.java
+/home/ubuntu/java/src/main/java/org/example/chaincode/invocation/InitAuction.java
+/home/ubuntu/java/src/main/java/org/example/chaincode/invocation/Biding_seller_user3.java
+/home/ubuntu/java/src/main/java/org/example/chaincode/invocation/InvokeQueryChaincode_user2.java
+/home/ubuntu/java/src/main/java/org/example/chaincode/invocation/QueryChaincode.java
+/home/ubuntu/java/src/main/java/org/example/chaincode/invocation/try_read_file.java
+/home/ubuntu/java/src/main/java/org/example/network/DeployInstantiateChaincode.java
+/home/ubuntu/java/src/main/java/org/example/user/RegisterEnrollUser.java
+/home/ubuntu/java/src/main/java/org/example/config/Config.java
+/home/ubuntu/java/src/main/java/org/example/user/CAEnrollment.java
+/home/ubuntu/java/src/main/java/org/example/chaincode/invocation/Biding_retailer_user1.java

@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: orgorderer1
+  name: orderer0-orgorderer1
+spec:
+  selector:
+    matchLabels:
+        app: hyperledger
+        role: orderer
+        org: orgorderer1
+        orderer-id: orderer0
+  replicas: 1
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: hyperledger
+        role: orderer
+        org: orgorderer1
+        orderer-id: orderer0
+    spec:
+      containers:
+      - name: orderer0-orgorderer1
+        image: hyperledger/fabric-orderer:1.4.0
+        env:
+        - name: ORDERER_GENERAL_LOGLEVEL
+          value: debug
+        - name: ORDERER_GENERAL_LISTENADDRESS
+          value: 0.0.0.0
+        - name: ORDERER_GENERAL_GENESISMETHOD
+          value: file
+        - name: ORDERER_GENERAL_GENESISFILE
+          value: /var/hyperledger/orderer/orderer.genesis.block
+        - name: ORDERER_GENERAL_LOCALMSPID
+          value: Orgorderer1MSP
+        - name: ORDERER_GENERAL_LOCALMSPDIR
+          value: /var/hyperledger/orderer/msp
+        - name: ORDERER_GENERAL_TLS_ENABLED
+          value: "false"
+        - name: ORDERER_GENERAL_TLS_PRIVATEKEY
+          value: /var/hyperledger/orderer/tls/server.key
+        - name: ORDERER_GENERAL_TLS_CERTIFICATE
+          value: /var/hyperledger/orderer/tls/server.crt
+        - name: ORDERER_GENERAL_TLS_ROOTCAS
+          value: "/var/hyperledger/orderer/tls/ca.crt"
+        workingDir: /opt/gopath/src/github.com/hyperledger/fabric/
+        ports:
+         - containerPort: 7050
+        command: ["orderer"]
+        volumeMounts:
+         - mountPath: /var/hyperledger/orderer/msp 
+           name: orderer-crypto-pv
+           subPath: orderers/orderer0.orgorderer1/msp
+         - mountPath: /var/hyperledger/orderer/tls
+           name: orderer-crypto-pv
+           subPath: orderers/orderer0.orgorderer1/tls
+         - mountPath: /var/hyperledger/orderer/orderer.genesis.block
+           name: orderer-crypto-pv
+           subPath: genesis.block
+      volumes:
+       - name: orderer-crypto-pv
+         persistentVolumeClaim:
+             claimName: orgorderer1-pv
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orderer0
+  namespace: orgorderer1
+spec:
+ selector:
+   app: hyperledger
+   role: orderer
+   orderer-id: orderer0
+   org: orgorderer1
+ type: NodePort
+ ports:
+   - name: listen-endpoint
+     protocol: TCP
+     port: 7050
+     targetPort: 7050
+     nodePort: 32000
